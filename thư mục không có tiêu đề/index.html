@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Dashboard theo dõi trạng thái Flask CI Docker Deployment App" />
+  <title>CI Docker Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Background -->
+  <div class="bg-grid"></div>
+  <div class="orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <span class="logo-dot"></span>
+        </div>
+        <div class="logo-text">
+          <h1>CI Docker Dashboard</h1>
+          <p>Flask Deployment Monitor</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <span id="uptime-badge" class="uptime-badge hidden">
+          ⏱ Uptime: <span id="uptime-text">0s</span>
+        </span>
+        <span id="header-badge" class="status-badge checking">
+          <span class="pulse-dot"></span>
+          <span id="header-status-text">Đang kiểm tra...</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- API Cards -->
+    <main class="main-grid">
+
+      <!-- Home Card -->
+      <div class="card card-home" id="card-home">
+        <div class="card-header">
+          <div class="card-icon">🏠</div>
+          <div>
+            <h2 class="card-title">Home</h2>
+            <code class="endpoint-label">GET /</code>
+          </div>
+          <div class="card-status-indicator" id="home-indicator">
+            <span class="indicator-dot"></span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="response-box" id="home-response">
+            <span class="placeholder-text">Chưa có dữ liệu</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-primary" id="btn-home" onclick="fetchHome()">
+            <span class="btn-icon">▶</span> Gọi API
+          </button>
+          <span class="latency-badge" id="home-latency"></span>
+        </div>
+      </div>
+
+      <!-- Health Card -->
+      <div class="card card-health" id="card-health">
+        <div class="card-header">
+          <div class="card-icon">💚</div>
+          <div>
+            <h2 class="card-title">Health Check</h2>
+            <code class="endpoint-label">GET /health</code>
+          </div>
+          <div class="card-status-indicator" id="health-indicator">
+            <span class="indicator-dot"></span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="response-box json-view" id="health-response">
+            <span class="placeholder-text">Chưa có dữ liệu</span>
+          </div>
+          <div class="health-pills" id="health-pills"></div>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-success" id="btn-health" onclick="fetchHealth()">
+            <span class="btn-icon">▶</span> Gọi API
+          </button>
+          <span class="latency-badge" id="health-latency"></span>
+        </div>
+      </div>
+
+      <!-- Version Card -->
+      <div class="card card-version" id="card-version">
+        <div class="card-header">
+          <div class="card-icon">🚀</div>
+          <div>
+            <h2 class="card-title">Version</h2>
+            <code class="endpoint-label">GET /version</code>
+          </div>
+          <div class="card-status-indicator" id="version-indicator">
+            <span class="indicator-dot"></span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="response-box json-view" id="version-response">
+            <span class="placeholder-text">Chưa có dữ liệu</span>
+          </div>
+          <div class="version-badge-wrap" id="version-badge-wrap"></div>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-accent" id="btn-version" onclick="fetchVersion()">
+            <span class="btn-icon">▶</span> Gọi API
+          </button>
+          <span class="latency-badge" id="version-latency"></span>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Request Log -->
+    <section class="log-section">
+      <div class="log-header">
+        <h3 class="log-title">
+          <span class="log-icon">📋</span> Request Log
+        </h3>
+        <div class="log-controls">
+          <button class="btn btn-outline btn-sm" id="btn-poll" onclick="togglePolling()">
+            <span id="poll-icon">⏱</span> Auto Refresh
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="pingAll()">🔄 Ping All</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearLog()">🗑 Xóa log</button>
+        </div>
+      </div>
+      <div class="log-container" id="log-container">
+        <div class="log-empty" id="log-empty">
+          <span class="log-empty-icon">📭</span>
+          <p>Chưa có request nào. Bấm <strong>Gọi API</strong> hoặc <strong>Ping All</strong>.</p>
+        </div>
+        <ul class="log-list" id="log-list"></ul>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <span class="stat-value" id="stat-total">0</span>
+        <span class="stat-label">Tổng requests</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value stat-ok" id="stat-ok">0</span>
+        <span class="stat-label">Thành công</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value stat-fail" id="stat-fail">0</span>
+        <span class="stat-label">Lỗi</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value" id="stat-avg-latency">—</span>
+        <span class="stat-label">Avg Latency</span>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Flask CI Docker Deployment · Version <span id="footer-version">—</span> · <span id="footer-time"></span></p>
+    </footer>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

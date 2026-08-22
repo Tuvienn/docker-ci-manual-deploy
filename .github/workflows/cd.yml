@@ -1,0 +1,52 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Check Docker
+        run: docker version
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t docker-ci-manual-deploy:${{ github.event.workflow_run.head_sha }} \
+            .
+
+      - name: Remove old container
+        run: |
+          docker rm -f flask-app-deploy 2>/dev/null || true
+
+      - name: Run new container
+        run: |
+          docker run -d \
+            --name flask-app-deploy \
+            -p 8081:8000 \
+            --restart unless-stopped \
+            docker-ci-manual-deploy:${{ github.event.workflow_run.head_sha }}
+
+      - name: Verify deployment
+        run: |
+          sleep 3
+          curl --fail http://localhost:8081/health
